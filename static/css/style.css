@@ -188,7 +188,8 @@ header h1 {
 }
 
 .control-btn.playing {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: var(--accent-gradient);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
 }
 
 .control-btn.small {

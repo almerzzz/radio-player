@@ -20,6 +20,59 @@ let isPlaying = false;
 let stations = [];
 let lastVolume = 80;
 
+// === iOS DETECTION ===
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// === WEB AUDIO API ДЛЯ iOS ===
+let audioContext = null;
+let gainNode = null;
+let sourceNode = null;
+let isWebAudioReady = false;
+
+function initWebAudio() {
+    if (isWebAudioReady) return;
+    
+    try {
+        // Создаем AudioContext
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Создаем GainNode для контроля громкости
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.8; // Начальная громкость 80%
+        
+        // Создаем источник из audio элемента
+        sourceNode = audioContext.createMediaElementSource(audioPlayer);
+        
+        // Соединяем: источник -> gain -> выход
+        sourceNode.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        isWebAudioReady = true;
+        console.log('✅ Web Audio API инициализирован');
+    } catch (error) {
+        console.error('❌ Ошибка инициализации Web Audio:', error);
+        isWebAudioReady = false;
+    }
+}
+
+function setVolume(value) {
+    value = Math.max(0, Math.min(100, value));
+    
+    if (isWebAudioReady && gainNode) {
+        // Для iOS используем Web Audio API
+        gainNode.gain.value = value / 100;
+        console.log(`🔊 Громкость (Web Audio): ${value}%`);
+    } else {
+        // Для десктопа используем стандартный метод
+        audioPlayer.volume = value / 100;
+        console.log(`🔊 Громкость (стандарт): ${value}%`);
+    }
+    
+    volumeSlider.value = value;
+    updateVolumeIcon(value);
+}
+
 // === ЗАГРУЗКА СТАНЦИЙ ===
 async function loadStations() {
     try {
@@ -34,6 +87,19 @@ async function loadStations() {
         stationCount.textContent = `(${stations.length})`;
         console.log('✅ Загружено станций:', stations.length);
         stations.forEach((s, i) => console.log(`  ${i+1}. ${s.name}`));
+        
+        // Показываем предупреждение для iOS
+        if (isIOS) {
+            console.log('📱 Обнаружено iOS устройство');
+            const volumeSection = document.querySelector('.volume-section');
+            if (volumeSection) {
+                const hint = document.createElement('div');
+                hint.className = 'ios-volume-hint';
+                hint.innerHTML = '💡 <small>На iOS используйте кнопки громкости телефона</small>';
+                hint.style.cssText = 'text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 8px;';
+                volumeSection.appendChild(hint);
+            }
+        }
     } catch (error) {
         console.error('❌ Ошибка загрузки станций:', error);
     }
@@ -96,6 +162,12 @@ function playStation() {
     console.log('🎵 Попытка воспроизведения:', currentStation.name);
     console.log('🔗 URL потока:', currentStation.url);
     stationStatus.textContent = 'Загрузка...';
+    
+    // Инициализируем Web Audio при первом воспроизведении
+    if (isIOS && !isWebAudioReady) {
+        initWebAudio();
+    }
+    
     audioPlayer.src = currentStation.url;
     audioPlayer.load();
     
@@ -105,6 +177,14 @@ function playStation() {
         playPromise
             .then(() => {
                 console.log('✅ Воспроизведение началось:', currentStation.name);
+                
+                // Resume AudioContext если он suspended (требование iOS)
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        console.log('✅ AudioContext resumed');
+                    });
+                }
+                
                 isPlaying = true;
                 playBtn.textContent = '⏸';
                 playBtn.classList.add('playing');
@@ -114,7 +194,7 @@ function playStation() {
             })
             .catch(error => {
                 console.error('❌ Ошибка воспроизведения:', error);
-                console.error(' Тип ошибки:', audioPlayer.error);
+                console.error('📝 Тип ошибки:', audioPlayer.error);
                 stationStatus.textContent = 'Не работает';
                 isPlaying = false;
                 playBtn.textContent = '▶';
@@ -192,17 +272,9 @@ function updateVolumeIcon(value) {
     volumeValue.textContent = value + '%';
 }
 
-function setVolume(value) {
-    value = Math.max(0, Math.min(100, value));
-    audioPlayer.volume = value / 100;
-    volumeSlider.value = value;
-    updateVolumeIcon(value);
-    console.log(`🔊 Громкость: ${value}%`);
-}
-
 function toggleMute() {
     console.log('🔇 Toggle Mute');
-    if (audioPlayer.volume > 0) {
+    if (audioPlayer.volume > 0 || (gainNode && gainNode.gain.value > 0)) {
         lastVolume = volumeSlider.value;
         console.log(`💾 Сохранена громкость: ${lastVolume}%`);
         setVolume(0);
@@ -283,7 +355,6 @@ document.addEventListener('keydown', (e) => {
             }
             break;
         default:
-            // Не логируем все остальные клавиши, чтобы не засорять консоль
             break;
     }
 });
@@ -351,36 +422,28 @@ audioPlayer.addEventListener('play', () => {
 
 // === ИНИЦИАЛИЗАЦИЯ ===
 console.log('🚀 Инициализация приложения...');
+console.log('📱 iOS устройство:', isIOS ? 'Да' : 'Нет');
 loadTheme();
 setVolume(80);
 loadStations();
 console.log('✅ Приложение готово к работе');
 
 // Service Worker
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
     console.log('🔧 Регистрация Service Worker...');
     navigator.serviceWorker.register('/static/js/service-worker.js')
         .then(() => console.log('✅ Service Worker зарегистрирован'))
         .catch((err) => console.error('❌ Ошибка регистрации SW:', err));
 } else {
-    console.warn('⚠️ Service Worker не поддерживается');
+    if (window.location.protocol === 'https:') {
+        console.warn('⚠️ Service Worker не поддерживается браузером');
+    } else {
+        console.log('ℹ️ Service Worker требует HTTPS (не регистрируется на HTTP)');
+    }
 }
 
-// === СКРЫТЬ ГОРЯЧИЕ КЛАВИШИ НА iOS ===
-function isIOS() {
-    return [
-        'iPad Simulator',
-        'iPhone Simulator',
-        'iPod Simulator',
-        'iPad',
-        'iPhone',
-        'iPod'
-    ].includes(navigator.platform)
-    || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
-}
-
-// Скрываем блок с горячими клавишами на iOS
-if (isIOS()) {
+// Скрываем горячие клавиши на iOS
+if (isIOS) {
     console.log('📱 Обнаружено iOS устройство, скрываем горячие клавиши');
     const hotkeysInfo = document.querySelector('.hotkeys-info');
     if (hotkeysInfo) {
