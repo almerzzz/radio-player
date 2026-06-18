@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "name": "Европа Плюс",
+        "url": "https://ep128.hostingradio.ru:8030/ep128",
+        "logo": "🎵"
+    },
+    {
+        "id": 2,
+        "name": "DFM",
+        "url": "https://dfm.hostingradio.ru/dfm128.mp3",
+        "logo": "🎧"
+    },
+    {
+        "id": 8,
+        "name": "Русское Радио",
+        "url": "https://rusradio.hostingradio.ru/rusradio128.mp3",
+        "logo": "🎤"
+    }
+]

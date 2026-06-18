@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Радио Моего Города</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Радио">
+    <link rel="apple-touch-icon" href="/static/img/icon-192.png">
+</head>
+<body>
+    <div class="player-container">
+        <!-- Header с темой -->
+        <header>
+            <div class="header-content">
+                <h1>📻 Радио Плеер #1</h1>
+                <button id="themeToggle" class="theme-btn" title="Сменить тему (T)">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Now Playing -->
+        <div class="now-playing">
+            <div class="station-logo" id="stationLogo">
+                <span>🎵</span>
+            </div>
+            <div class="station-info">
+                <h2 id="stationName">Выберите станцию</h2>
+                <p id="stationStatus">Остановлено</p>
+            </div>
+            <div class="visualizer" id="visualizer">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="prevBtn" class="control-btn small" title="Предыдущая (↑)">⏮</button>
+            <button id="playBtn" class="control-btn" title="Play/Pause (Пробел)">▶</button>
+            <button id="nextBtn" class="control-btn small" title="Следующая (↓)">⏭</button>
+        </div>
+
+        <!-- Volume -->
+        <div class="volume-section">
+            <div class="volume-control">
+                <span id="volumeIcon" class="volume-icon">🔊</span>
+                <input type="range" id="volumeSlider" min="0" max="100" value="80">
+                <span id="volumeValue" class="volume-value">80%</span>
+            </div>
+        </div>
+
+        <!-- Stations List -->
+        <div class="stations-section">
+            <h3>Станции <span id="stationCount">(0)</span></h3>
+            <div class="stations-list" id="stationsList"></div>
+        </div>
+
+        <!-- Hotkeys Info -->
+        <div class="hotkeys-info">
+            <h4>⌨️ Горячие клавиши</h4>
+            <div class="hotkeys-grid">
+                <div class="hotkey-item">
+                    <kbd>Пробел</kbd>
+                    <span>Play/Pause</span>
+                </div>
+                <div class="hotkey-item">
+                    <kbd>↑</kbd>
+                    <kbd>↓</kbd>
+                    <span>Станции</span>
+                </div>
+                <div class="hotkey-item">
+                    <kbd>←</kbd>
+                    <kbd>→</kbd>
+                    <span>Громкость</span>
+                </div>
+                <div class="hotkey-item">
+                    <kbd>T</kbd>
+                    <span>Тема</span>
+                </div>
+                <div class="hotkey-item">
+                    <kbd>M</kbd>
+                    <span>Mute</span>
+                </div>
+                <div class="hotkey-item">
+                    <kbd>1-9</kbd>
+                    <span>Станция 1-9</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer" preload="none"></audio>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
